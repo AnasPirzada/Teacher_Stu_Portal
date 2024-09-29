@@ -26,15 +26,19 @@ class CourseController extends Controller
     // Show course details
     public function show($id)
     {
-        $course = Course::findOrFail($id);
-        $assessments = $course->assessments;
-        $teacher = $course->teacher;
         $course = Course::with(['teacher', 'assessments'])->findOrFail($id);
-
         return view('course.details', compact('course'));
-        return view('course.details', compact('course', 'assessments', 'teacher'));
-
-
     }
-    
+
+    // Show course details with teacher/student logic
+    public function showDetails($id)
+    {
+        $course = Course::with('students', 'assessments', 'teacher')->findOrFail($id);
+
+        // Get the authenticated user
+        $user = Auth::user();
+        $isTeacher = $user->role === 'teacher';
+
+        return view('course.details', compact('course', 'user', 'isTeacher'));
+    }
 }
