@@ -17,6 +17,11 @@ Route::get('/home', [CourseController::class, 'index'])->middleware('auth')->nam
 
 // Course Details
 Route::get('/course/{id}', [CourseController::class, 'show'])->middleware('auth')->name('course.details');
+// web.php
+Route::get('/course/{id}/details', [CourseController::class, 'showDetails'])->middleware('auth')->name('course.details');
+
+// Assessment-specific routes
+Route::get('/assessment/{id}/teacher', [AssessmentController::class, 'teacherView'])->middleware('auth')->name('assessment.teacher_view');
 
 // Assessment Details (For Students)
 Route::get('/assessment/{id}', [AssessmentController::class, 'show'])->middleware('auth')->name('assessment.details');
