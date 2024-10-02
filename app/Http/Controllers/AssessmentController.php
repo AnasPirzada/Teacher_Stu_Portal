@@ -13,7 +13,7 @@ class AssessmentController extends Controller
     public function details($id)
     {
         $assessment = Assessment::findOrFail($id);
-        $course = $assessment->course; // Get the associated course
+        $course = $assessment->course;
         $user = auth()->user();
         $isTeacher = $user->role === 'teacher';
     
@@ -31,18 +31,20 @@ class AssessmentController extends Controller
         } else {
             // Logic for the student
             $submittedReviews = $assessment->reviews()->where('reviewer_id', $user->id)->get();
-            $receivedReviews = $assessment->reviews()->where('reviewee_id', $user->id)->get();
             
+            // Retrieve only teacher reviews with a score for the logged-in student
+            $receivedReviews = $assessment->reviews()
+                ->where('reviewee_id', $user->id)
+                ->whereNotNull('score') // Ensure only reviews with a score (i.e., from teachers)
+                ->with('reviewer') // Load teacher information (reviewer)
+                ->get();
+                
             // Get the students enrolled in the course
-            $students = $course->students; // Retrieve all students in the course
+            $students = $course->students;
     
             return view('assessments.student_view', compact('assessment', 'course', 'submittedReviews', 'receivedReviews', 'isTeacher', 'students'));
         }
     }
-    
-
-    
-
     
 
     public function store(Request $request)
@@ -70,54 +72,61 @@ class AssessmentController extends Controller
         $request->validate([
             'assessment_id' => 'required|exists:assessments,id',
             'review_text' => 'required|string',
-            'reviewee_id' => 'required|exists:users,id',
         ]);
-
+    
+        // Check if the student has already submitted a review for this assessment
+        $existingReview = Review::where('assessment_id', $request->assessment_id)
+            ->where('reviewer_id', auth()->id()) // The student who is reviewing
+            ->where('reviewee_id', auth()->id()) // Self-review
+            ->first();
+    
+        if ($existingReview) {
+            // If a review already exists, return with an error message
+            return redirect()->back()->with('error', 'You cannot submit more than one review for this assessment.');
+        }
+    
+        // Create a new review
         Review::create([
             'assessment_id' => $request->assessment_id,
-            'reviewer_id' => auth()->id(),
-            'reviewee_id' => $request->reviewee_id,
+            'reviewer_id' => auth()->id(),  // Reviewer is the logged-in student
+            'reviewee_id' => auth()->id(),  // Self-review by the student
             'review_text' => $request->review_text,
         ]);
-
+    
+        // Redirect with success message
         return redirect()->back()->with('success', 'Review submitted successfully');
     }
+    
+
     public function markStudent(Request $request, $id)
     {
-        // Validate input
         $request->validate([
             'student_id' => 'required|exists:users,id',
             'score' => 'required|integer|min:0|max:100',  // Adjust max score dynamically if needed
         ]);
     
-        // Retrieve the assessment and student
-        $assessment = Assessment::findOrFail($id);
-        $studentId = $request->student_id;
-    
         // Check if a review already exists for this student and assessment
-        $review = Review::where('assessment_id', $id)
-                        ->where('reviewee_id', $studentId)
-                        ->where('reviewer_id', auth()->id()) // Assuming the teacher is the reviewer
-                        ->first();
+        $existingReview = Review::where('assessment_id', $id)
+            ->where('reviewee_id', $request->student_id)
+            ->where('reviewer_id', auth()->id()) // Teacher is the reviewer
+            ->first();
     
-        if ($review) {
-            // If a review exists, update the score
-            $review->score = $request->score;
-            $review->save();
-        } else {
-            // If no review exists, create a new one
-            Review::create([
-                'assessment_id' => $assessment->id,
-                'reviewer_id' => auth()->id(),  // Assuming the teacher is logged in
-                'reviewee_id' => $studentId,
-                'review_text' => 'Score assigned by teacher',  // Default review text
-                'score' => $request->score,
-            ]);
+        if ($existingReview) {
+            // If a review exists, prevent further modifications
+            return redirect()->back()->with('error', 'You cannot modify the score.');
         }
     
-        return redirect()->back()->with('success', 'Score saved successfully.');
+        // If no review exists, create a new one
+        Review::create([
+            'assessment_id' => $id,
+            'reviewer_id' => auth()->id(),  // The teacher's ID
+            'reviewee_id' => $request->student_id,
+            'review_text' => 'Score assigned by teacher',
+            'score' => $request->score,
+        ]);
+    
+        // Redirect with success message
+        return redirect()->back()->with('success', 'Score submitted successfully.');
     }
     
-    
-
 }

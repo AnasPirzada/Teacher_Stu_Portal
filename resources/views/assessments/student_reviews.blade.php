@@ -26,7 +26,7 @@
         <ul>
             @foreach($receivedReviews as $review)
                 <li>
-                    Reviewer: {{ $review->reviewer->name }} - {{ $review->review_text }}
+                    Reviewer: {{ $review->reviewer->name }} - {{ $review->review_text }} {{ $review->score }}
                 </li>
             @endforeach
         </ul>
