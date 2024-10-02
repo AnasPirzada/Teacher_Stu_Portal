@@ -10,7 +10,7 @@
         <h3>Your Courses:</h3>
         <ul>
             @foreach($courses as $course)
-                <li><a href="{{ route('course.details', $course->id) }}">{{ $course->course_code }} - {{ $course->name }}</a></li>
+                <li><a href="{{ route('courses.details', $course->id) }}">{{ $course->course_code }} - {{ $course->name }}</a></li>
             @endforeach
         </ul>
     @endif

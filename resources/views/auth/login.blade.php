@@ -12,12 +12,18 @@
 
                         <div class="form-group">
                             <label for="s_number">{{ __('Student Number') }}</label>
-                            <input id="s_number" type="text" class="form-control" name="s_number" required autofocus>
+                            <input id="s_number" type="text" class="form-control @error('s_number') is-invalid @enderror" name="s_number" required autofocus>
+                            @error('s_number')
+                                <span class="invalid-feedback" role="alert">{{ $message }}</span>
+                            @enderror
                         </div>
 
                         <div class="form-group mt-3">
                             <label for="password">{{ __('Password') }}</label>
-                            <input id="password" type="password" class="form-control" name="password" required>
+                            <input id="password" type="password" class="form-control @error('password') is-invalid @enderror" name="password" required>
+                            @error('password')
+                                <span class="invalid-feedback" role="alert">{{ $message }}</span>
+                            @enderror
                         </div>
 
                         <div class="form-group mt-3">

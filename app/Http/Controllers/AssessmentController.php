@@ -2,91 +2,122 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
 use App\Models\Assessment;
 use App\Models\Course;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use App\Models\Review;
+use App\Models\User;
 
 class AssessmentController extends Controller
 {
-    // Show details of a specific assessment for the student or teacher
-    public function show($id)
+    public function details($id)
     {
         $assessment = Assessment::findOrFail($id);
-
-        if (auth()->user()->role == 'teacher') {
-            // Show teacher view of the assessment
-            return redirect()->route('assessment.teacher_view', $id);
+        $course = $assessment->course; // Get the associated course
+        $user = auth()->user();
+        $isTeacher = $user->role === 'teacher';
+    
+        if ($isTeacher) {
+            // Logic for the teacher
+            $students = $course->students()->paginate(10); // Paginate 10 students per page
+    
+            foreach ($students as $student) {
+                $student->submittedReviews = $assessment->reviews()->where('reviewer_id', $student->id)->count();
+                $student->receivedReviews = $assessment->reviews()->where('reviewee_id', $student->id)->count();
+                $student->score = $assessment->reviews()->where('reviewee_id', $student->id)->avg('score'); // Average score
+            }
+    
+            return view('assessments.teacher_view', compact('assessment', 'course', 'students', 'isTeacher'));
         } else {
-            // Show student view of the assessment
-            return view('assessments.student_view', compact('assessment'));
+            // Logic for the student
+            $submittedReviews = $assessment->reviews()->where('reviewer_id', $user->id)->get();
+            $receivedReviews = $assessment->reviews()->where('reviewee_id', $user->id)->get();
+            
+            // Get the students enrolled in the course
+            $students = $course->students; // Retrieve all students in the course
+    
+            return view('assessments.student_view', compact('assessment', 'course', 'submittedReviews', 'receivedReviews', 'isTeacher', 'students'));
         }
     }
+    
 
-    // Display the assessment view for the teacher with students and reviews
-    public function teacherView($id)
-    {
-        $assessment = Assessment::with(['course', 'reviews'])->findOrFail($id);
+    
 
-        // Get all students enrolled in the course with pagination
-        $students = $assessment->course->students()->paginate(10);
+    
 
-        // Retrieve each student's submitted and received reviews count
-        foreach ($students as $student) {
-            $student->submitted_reviews_count = $assessment->reviews()->where('reviewer_id', $student->id)->count();
-            $student->received_reviews_count = $assessment->reviews()->where('reviewee_id', $student->id)->count();
-            $student->score = $assessment->reviews()->where('reviewee_id', $student->id)->value('score');
-        }
-
-        return view('assessments.teacher_view', compact('assessment', 'students'));
-    }
-
-    // Add an assessment to a course
     public function store(Request $request)
     {
         $request->validate([
-            'title' => 'required|string|max:20',
+            'title' => 'required|string|max:255',
             'instruction' => 'required|string',
-            'num_reviews' => 'required|integer|min:1',
-            'max_score' => 'required|integer|min:1|max:100',
             'due_date' => 'required|date',
-            'type' => 'required|in:student-select,teacher-assign',
-            'course_id' => 'required|exists:courses,id',
+            'max_score' => 'required|integer|min:1',
         ]);
 
         Assessment::create([
             'title' => $request->title,
             'instruction' => $request->instruction,
-            'num_reviews' => $request->num_reviews,
-            'max_score' => $request->max_score,
             'due_date' => $request->due_date,
-            'type' => $request->type,
+            'max_score' => $request->max_score,
             'course_id' => $request->course_id,
         ]);
 
-        return redirect()->route('courses.show', $request->course_id)->with('success', 'Assessment created successfully.');
+        return redirect()->back()->with('success', 'Assessment created successfully');
     }
 
-    // Update an assessment
-    public function update(Request $request, $id)
+    public function storeReview(Request $request)
     {
-        $assessment = Assessment::findOrFail($id);
+        $request->validate([
+            'assessment_id' => 'required|exists:assessments,id',
+            'review_text' => 'required|string',
+            'reviewee_id' => 'required|exists:users,id',
+        ]);
 
-        // Check if the assessment has no submissions before allowing update
-        if ($assessment->reviews->isEmpty()) {
-            $request->validate([
-                'title' => 'required|string|max:20',
-                'instruction' => 'required|string',
-                'num_reviews' => 'required|integer|min:1',
-                'max_score' => 'required|integer|min:1|max:100',
-                'due_date' => 'required|date',
-                'type' => 'required|in:student-select,teacher-assign',
-            ]);
+        Review::create([
+            'assessment_id' => $request->assessment_id,
+            'reviewer_id' => auth()->id(),
+            'reviewee_id' => $request->reviewee_id,
+            'review_text' => $request->review_text,
+        ]);
 
-            $assessment->update($request->all());
-            return redirect()->route('courses.show', $assessment->course_id)->with('success', 'Assessment updated successfully.');
-        }
-
-        return redirect()->back()->withErrors(['error' => 'Assessment cannot be updated after submissions.']);
+        return redirect()->back()->with('success', 'Review submitted successfully');
     }
+    public function markStudent(Request $request, $id)
+    {
+        // Validate input
+        $request->validate([
+            'student_id' => 'required|exists:users,id',
+            'score' => 'required|integer|min:0|max:100',  // Adjust max score dynamically if needed
+        ]);
+    
+        // Retrieve the assessment and student
+        $assessment = Assessment::findOrFail($id);
+        $studentId = $request->student_id;
+    
+        // Check if a review already exists for this student and assessment
+        $review = Review::where('assessment_id', $id)
+                        ->where('reviewee_id', $studentId)
+                        ->where('reviewer_id', auth()->id()) // Assuming the teacher is the reviewer
+                        ->first();
+    
+        if ($review) {
+            // If a review exists, update the score
+            $review->score = $request->score;
+            $review->save();
+        } else {
+            // If no review exists, create a new one
+            Review::create([
+                'assessment_id' => $assessment->id,
+                'reviewer_id' => auth()->id(),  // Assuming the teacher is logged in
+                'reviewee_id' => $studentId,
+                'review_text' => 'Score assigned by teacher',  // Default review text
+                'score' => $request->score,
+            ]);
+        }
+    
+        return redirect()->back()->with('success', 'Score saved successfully.');
+    }
+    
+    
+
 }

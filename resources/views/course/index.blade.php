@@ -1,30 +1,39 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <h2 class="mb-4">Your Courses</h2>
+<div class="container">
+    <h1>All Courses</h1>
 
-            @if (session('success'))
-                <div class="alert alert-success">
-                    {{ session('success') }}
-                </div>
-            @endif
+    @if($courses->isEmpty())
+        <p>No courses available at the moment.</p>
+    @else
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Course Name</th>
+                    <th>Course Code</th>
+                    <th>Teacher</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($courses as $course)
+                    <tr>
+                        <td>{{ $course->name }}</td>
+                        <td>{{ $course->course_code }}</td>
+                        <td>{{ $course->teacher->name }}</td>
+                        <td>
+                            <a href="{{ route('courses.details', $course->id) }}" class="btn btn-info">View Details</a>
+                        </td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
 
-            @if ($courses->isEmpty())
-                <div class="alert alert-info">You are not enrolled in any courses.</div>
-            @else
-                <div class="list-group">
-                    @foreach ($courses as $course)
-                        <a href="{{ route('courses.show', $course->id) }}" class="list-group-item list-group-item-action">
-                            <h5 class="mb-1">{{ $course->name }}</h5>
-                            <small>{{ $course->course_code }}</small>
-                        </a>
-                    @endforeach
-                </div>
-            @endif
+        <!-- Pagination -->
+        <div class="d-flex justify-content-center">
+            {{ $courses->links() }}
         </div>
-    </div>
+    @endif
 </div>
 @endsection

@@ -14,19 +14,24 @@ class TeacherController extends Controller
     public function enrollStudent(Request $request, $id)
     {
         $course = Course::findOrFail($id);
+
+        // Validate student S-number input
         $student = User::where('s_number', $request->input('student_s_number'))->first();
 
         if (!$student || $student->role !== 'student') {
             return back()->withErrors(['enroll_error' => 'Invalid student S-number']);
         }
-            // Check if the student is already enrolled in the course to avoid duplicates
-            if ($course->students()->where('student_id', $student->id)->exists()) {
-                return back()->withErrors(['enroll_error' => 'Student is already enrolled in this course']);
-            }
+
+        // Check if the student is already enrolled in the course to avoid duplicates
+        if ($course->students()->where('student_id', $student->id)->exists()) {
+            return back()->withErrors(['enroll_error' => 'Student is already enrolled in this course']);
+        }
+
+        // Enroll the student
         $course->students()->attach($student->id);
 
-        return redirect()->route('course.details', $id)->with('success', 'Student enrolled successfully');
-    
+        return redirect()->route('courses.details', $id)->with('success', 'Student enrolled successfully');
+        
     }
 
     // Add a peer review assessment
@@ -53,7 +58,7 @@ class TeacherController extends Controller
             'course_id' => $course->id,
         ]);
 
-        return redirect()->route('course.details', $id)->with('success', 'Assessment added successfully');
+        return redirect()->route('courses.details', $id)->with('success', 'Assessment added successfully');
     }
 
     // Method to mark student score

@@ -2,56 +2,77 @@
 
 @section('content')
 <div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <h2>{{ $assessment->title }}</h2>
-            <p><strong>Instructions:</strong> {{ $assessment->instruction }}</p>
-            <p><strong>Due Date:</strong> {{ $assessment->due_date }}</p>
-            <p><strong>Maximum Score:</strong> {{ $assessment->max_score }}</p>
+    <div class="row">
+        <div class="col-12">
+            <h1 class="display-4 text-center">{{ $assessment->title }}</h1>
+        </div>
+        <div class="col-12 text-center mb-4">
+            <p><strong>Instruction:</strong> {{ $assessment->instruction }}</p>
+            <p><strong>Due Date:</strong> {{ \Carbon\Carbon::parse($assessment->due_date)->format('M d, Y') }}</p>
+            <p><strong>Max Score:</strong> {{ $assessment->max_score }}</p>
+        </div>
 
-            <h4>Submit Your Peer Review</h4>
-
-            @if ($errors->any())
-                <div class="alert alert-danger">
-                    <ul>
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
+        {{-- Submitted Reviews Section --}}
+        <div class="col-12">
+            <h2 class="mb-3">Submitted Reviews</h2>
+            @if($submittedReviews->isEmpty())
+                <div class="alert alert-info text-center">You haven't submitted any reviews yet.</div>
+            @else
+                <ul class="list-group">
+                    @foreach($submittedReviews as $review)
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>{{ $review->review_text }}</span>
+                            <span class="badge badge-secondary">Reviewee: {{ $review->reviewee->name }}</span>
+                        </li>
+                    @endforeach
+                </ul>
             @endif
+        </div>
 
-            <form method="POST" action="{{ route('review.store') }}">
-                @csrf
-                <input type="hidden" name="assessment_id" value="{{ $assessment->id }}">
+        {{-- Peer Review Submission Form --}}
+<div class="col-12 mt-5">
+    <h2 class="mb-3">Submit Peer Review</h2>
+    <form action="{{ route('assessment.submit_review') }}" method="POST" class="shadow p-4 rounded bg-light">
+        @csrf
+        <input type="hidden" name="assessment_id" value="{{ $assessment->id }}">
+        
+        <div class="form-group">
+            <label for="reviewee_id">Select Student to Review:</label>
+            <select name="reviewee_id" id="reviewee_id" class="form-control my-4" required>
+                <option value="" disabled selected>Select a student</option>
+                @foreach($students as $student) {{-- Use the students passed from the controller --}}
+                    @if($student->id !== auth()->id()) {{-- Exclude self from review --}}
+                        <option value="{{ $user->id  }}">{{ $user->name  }}</option>
+                    @endif
+                @endforeach
+            </select>
+        </div>
 
-                <div class="form-group">
-                    <label for="reviewee_id">Select a Peer to Review</label>
-                    <select class="form-control @error('reviewee_id') is-invalid @enderror" id="reviewee_id" name="reviewee_id" required>
-                        <option value="">Choose a student</option>
-                        @foreach ($students as $student)
-                            <option value="{{ $student->id }}" {{ old('reviewee_id') == $student->id ? 'selected' : '' }}>
-                                {{ $student->name }} ({{ $student->s_number }})
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('reviewee_id')
-                        <span class="invalid-feedback" role="alert">{{ $message }}</span>
-                    @enderror
-                </div>
+        <div class="form-group">
+            <label for="review_text">Your Review:</label>
+            <textarea name="review_text" id="review_text" class="form-control" required minlength="5" rows="4" placeholder="Write at least 5 words"></textarea>
+        </div>
 
-                <div class="form-group mt-3">
-                    <label for="review_text">Review Text</label>
-                    <textarea class="form-control @error('review_text') is-invalid @enderror" id="review_text" name="review_text" rows="4" required>{{ old('review_text') }}</textarea>
-                    @error('review_text')
-                        <span class="invalid-feedback" role="alert">{{ $message }}</span>
-                    @enderror
-                </div>
+        <button type="submit" class="btn btn-primary mt-4 btn-block">Submit Review</button>
+    </form>
+</div>
 
-                <div class="form-group mt-4">
-                    <button type="submit" class="btn btn-primary w-100">Submit Review</button>
-                </div>
-            </form>
+
+        {{-- Received Reviews Section --}}
+        <div class="col-12 mt-5">
+            <h2 class="mb-3">Received Reviews</h2>
+            @if($receivedReviews->isEmpty())
+                <div class="alert alert-warning text-center">No reviews received yet.</div>
+            @else
+                <ul class="list-group">
+                    @foreach($receivedReviews as $review)
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>{{ $review->review_text }}</span>
+                            <span class="badge badge-secondary">Reviewer: {{ $review->reviewer->name }}</span>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
         </div>
     </div>
 </div>
