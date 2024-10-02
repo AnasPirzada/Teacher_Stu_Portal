@@ -2,6 +2,8 @@
 
 @section('content')
 <div class="container mx-auto p-5">
+
+
     <div class="bg-white shadow-md rounded-lg p-4 mb-4">
         <h1 class="text-3xl font-bold mb-2">{{ $course->name }} ({{ $course->course_code }})</h1>
         <h3 class="text-lg font-semibold">Teacher: <span class="text-primary">{{ $course->teacher->name }}</span></h3>
@@ -9,18 +11,32 @@
 
     <div class="bg-light p-4 rounded-lg shadow-md mb-4">
         <h3 class="text-2xl font-semibold mb-3">Assessments:</h3>
-        <ul class="list-unstyled">
+        <ul class="list-unstyled ">
             @foreach($course->assessments as $assessment)
-                <li class="mb-2">
+            <div class="my-4">
+
+                <li class=" ">
                     <span class="font-weight-bold">{{ $assessment->title }}</span> - Due: <span class="text-danger">{{ $assessment->due_date }}</span>
-                    <a href="{{ route('assessment.details', $assessment->id) }}" class="text-info">View Details</a>
+                    
+                    
+                    
+                    
+                    
                 </li>
+                <li>
+                    <a href="{{ route('assessment.details', $assessment->id) }}" class="text-info">View Details</a>
+                    @if($isTeacher)
+                    <a href="{{ route('assessment.edit.assessment', $assessment->id) }}" class="text-warning ps-6">Edit</a>
+                    @endif
+                </li>
+            </div>
             @endforeach
         </ul>
     </div>
 
     @if($isTeacher)
         <div class="bg-white p-4 rounded-lg shadow-md mb-4">
+            <!-- Enroll Student Form -->
             <h3 class="text-2xl font-semibold mb-3">Enroll a Student:</h3>
             <form method="POST" action="{{ route('teacher.enroll', $course->id) }}" class="mb-4">
                 @csrf
@@ -32,16 +48,10 @@
                         <button type="submit" class="btn btn-primary w-100 mt-3">Enroll Student</button>
                     </div>
                 </div>
-            </form>
-        
+            </form>  
 
-
-
-
-
-
-
-            <h3 class="text-2xl font-semibold mb-3 pt-4 ">Add a Peer Review Assessment:</h3>
+            <!-- Add Peer Review Assessment Form -->
+            <h3 class="text-2xl font-semibold mb-3 pt-4">Add a Peer Review Assessment:</h3>
             <form method="POST" action="{{ route('teacher.add.assessment', $course->id) }}">
                 @csrf
                 <div class="form-row">
@@ -74,6 +84,16 @@
                         <button type="submit" class="btn btn-primary w-100">Add Assessment</button>
                     </div>
                 </div>
+            </form>
+
+            <!-- Upload Course File Form -->
+            <h3 class="text-2xl font-semibold pt-5">Upload Course File:</h3>
+            <form method="POST" action="{{ route('courses.upload') }}" enctype="multipart/form-data">
+                @csrf
+                <div class="form-group pt-5">
+                    <input type="file" name="course_file" accept=".txt" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 mt-4">Upload Course</button>
             </form>
         </div>
     @endif

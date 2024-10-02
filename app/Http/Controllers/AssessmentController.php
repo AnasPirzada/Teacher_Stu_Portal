@@ -47,24 +47,28 @@ class AssessmentController extends Controller
     }
     
 
-    public function store(Request $request)
+    public function store(Request $request, $courseId)
     {
         $request->validate([
-            'title' => 'required|string|max:255',
+            'title' => 'required|string|max:20',
             'instruction' => 'required|string',
+            'num_reviews' => 'required|integer|min:1',
+            'max_score' => 'required|integer|min:1|max:100',
             'due_date' => 'required|date',
-            'max_score' => 'required|integer|min:1',
+            'type' => 'required|in:student-select,teacher-assign',
         ]);
-
+    
         Assessment::create([
             'title' => $request->title,
             'instruction' => $request->instruction,
-            'due_date' => $request->due_date,
+            'num_reviews' => $request->num_reviews,
             'max_score' => $request->max_score,
-            'course_id' => $request->course_id,
+            'due_date' => $request->due_date,
+            'type' => $request->type,
+            'course_id' => $courseId,
         ]);
-
-        return redirect()->back()->with('success', 'Assessment created successfully');
+    
+        return redirect()->back()->with('success', 'Peer Review Assessment added successfully');
     }
 
     public function storeReview(Request $request)
@@ -128,5 +132,49 @@ class AssessmentController extends Controller
         // Redirect with success message
         return redirect()->back()->with('success', 'Score submitted successfully.');
     }
-    
+
+    public function edit($id)
+{
+    $assessment = Assessment::findOrFail($id);
+
+    // Check if there are any submissions for this assessment
+    if ($assessment->reviews()->exists()) {
+        return redirect()->back()->with('error', 'You cannot edit the assessment after submissions have been made.');
+    }
+
+    return view('assessments.edit', compact('assessment'));
+}
+
+public function update(Request $request, $id)
+{
+    $request->validate([
+        'title' => 'required|string|max:20',
+        'instruction' => 'required|string',
+        'num_reviews' => 'required|integer|min:1',
+        'max_score' => 'required|integer|min:1|max:100',
+        'due_date' => 'required|date',
+        'type' => 'required|in:student-select,teacher-assign',
+    ]);
+
+    $assessment = Assessment::findOrFail($id);
+
+    // Prevent updating if submissions exist
+    if ($assessment->reviews()->exists()) {
+        return redirect()->back()->with('error', 'You cannot edit the assessment after submissions have been made.');
+    }
+
+    $assessment->update([
+        'title' => $request->title,
+        'instruction' => $request->instruction,
+        'num_reviews' => $request->num_reviews,
+        'max_score' => $request->max_score,
+        'due_date' => $request->due_date,
+        'type' => $request->type,
+    ]);
+
+    return redirect()->route('course.details', $assessment->course_id)->with('success', 'Assessment updated successfully.');
+}
+
+
+
 }

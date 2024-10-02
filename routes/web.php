@@ -21,9 +21,9 @@ Route::middleware('auth')->group(function () {
 
     // Home route to list courses
     Route::get('/home', [CourseController::class, 'index'])->name('home');
-
     // Course routes
     Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
+    Route::post('courses/upload', [CourseController::class, 'uploadCourseFile'])->name('courses.upload');
     Route::get('/courses/create', [CourseController::class, 'create'])->name('courses.create');
     Route::post('/courses', [CourseController::class, 'store'])->name('courses.store');
     Route::get('/courses/{id}', [CourseController::class, 'show'])->name('courses.show');
@@ -32,13 +32,20 @@ Route::middleware('auth')->group(function () {
     Route::put('/courses/{id}', [CourseController::class, 'update'])->name('courses.update');
     Route::delete('/courses/{id}', [CourseController::class, 'destroy'])->name('courses.destroy');
 
+
     // Assessment routes
     Route::get('/assessments/{id}', [AssessmentController::class, 'details'])->name('assessment.details'); // Details for teachers and students
     Route::post('/assessments/{id}/mark_student', [AssessmentController::class, 'markStudent'])->name('assessment.mark_student'); // Mark a student
 
+
     // Peer review submission
     Route::post('/assessments/submit_review', [AssessmentController::class, 'storeReview'])->name('assessment.submit_review'); // Submit peer review
 
+    // Route for editing a peer review assessment
+Route::get('assessment/{id}/edit', [AssessmentController::class, 'edit'])->name('assessment.edit.assessment');
+
+// Route for updating a peer review assessment
+Route::post('assessment/{id}/update', [AssessmentController::class, 'update'])->name('assessment.update.assessment');
     // Review routes
     Route::post('/review', [ReviewController::class, 'store'])->name('review.store');
 

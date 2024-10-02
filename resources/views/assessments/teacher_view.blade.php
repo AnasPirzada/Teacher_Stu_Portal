@@ -39,16 +39,17 @@
         </div>
     </div>
     @if(session('success'))
-    <div class="alert alert-success">
-        {{ session('success') }}
-    </div>
-@endif
+        <div class="alert alert-success">
+            {{ session('success') }}
+        </div>
+    @endif
 
-@if(session('error'))
-    <div class="alert alert-danger mt-4">
-        {{ session('error') }}
-    </div>
-@endif
+    @if(session('error'))
+        <div class="alert alert-danger mt-4">
+            {{ session('error') }}
+        </div>
+    @endif
+
     <!-- Responsive Student Table -->
     <div class="table-responsive">
         <table class="table table-striped table-hover">
@@ -88,8 +89,6 @@
                 @endforeach
             </tbody>
         </table>
-
-        
     </div>
 
     <!-- Pagination -->

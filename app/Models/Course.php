@@ -11,10 +11,16 @@ class Course extends Model
 
     protected $fillable = ['name', 'course_code', 'teacher_id'];
 
-    // Relationship with the teacher (singular)
+    // Relationship with the main teacher (singular)
     public function teacher()
     {
         return $this->belongsTo(User::class, 'teacher_id');
+    }
+
+    // Relationship with multiple teachers (if needed)
+    public function teachers()
+    {
+        return $this->belongsToMany(User::class, 'course_teacher', 'course_id', 'teacher_id');
     }
 
     // Relationship with assessments

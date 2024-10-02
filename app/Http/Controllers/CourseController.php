@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use App\Models\Assessment;
 use App\Models\Course;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Support\Facades\Log;
 class CourseController extends Controller
 {
     // Display the home page with courses
@@ -107,4 +109,91 @@ class CourseController extends Controller
 
         return redirect()->route('courses.index')->with('success', 'Course deleted successfully.');
     }
+// course upload file
+
+public function uploadCourseFile(Request $request)
+{
+    $request->validate([
+        'course_file' => 'required|file|mimes:json',
+    ]);
+
+    try {
+        // Parse the JSON file content
+        $fileContent = file_get_contents($request->file('course_file'));
+        $data = json_decode($fileContent, true);
+
+        // Validate JSON structure
+        if (!isset($data['course'], $data['users'], $data['assessments'])) {
+            throw new \Exception('Invalid JSON structure. Ensure "course", "users", and "assessments" fields are present.');
+        }
+
+        // Extract course data
+        $courseData = $data['course'];
+
+        // Check if the course already exists
+        $existingCourse = Course::where('course_code', $courseData['course_code'])->first();
+        if ($existingCourse) {
+            throw new \Exception('Course with the same course code already exists.');
+        }
+
+        // Create a new course
+        $course = Course::create([
+            'name' => $courseData['name'],
+            'course_code' => $courseData['course_code'],
+            'teacher_id' => $courseData['teacher_id'],
+        ]);
+
+        // Process the users array (students and teachers)
+        foreach ($data['users'] as $userData) {
+            $user = Auth::user();
+
+            $user = User::where('s_number', $userData['s_number'])->first();
+
+            // If the user doesn't exist, create them
+            if (!$user) {
+                $user = Auth::user();
+
+                $user = User::create([
+                    'name' => $userData['name'],
+                    'email' => $userData['email'],
+                    'password' => $userData['password'],  // Hashed password should be provided
+                    's_number' => $userData['s_number'],
+                    'role' => $userData['role'],
+                ]);
+            }
+
+            // Attach the user to the course as a student or teacher
+            if ($user->role === 'teacher') {
+                $course->teachers()->attach($user->id);
+            } else {
+                $course->students()->attach($user->id);
+            }
+        }
+
+        // Create the assessments
+        foreach ($data['assessments'] as $assessmentData) {
+            Assessment::create([
+                'course_id' => $course->id,
+                'title' => $assessmentData['title'],
+                'instruction' => $assessmentData['instruction'],
+                'num_reviews' => $assessmentData['num_reviews'],
+                'max_score' => $assessmentData['max_score'],
+                'due_date' => $assessmentData['due_date'],
+                'type' => $assessmentData['type'],
+            ]);
+        }
+
+        // Success, redirect back with a success message
+        return redirect()->back()->with('success', 'Course, students, teachers, and assessments created successfully.');
+
+    } catch (\Exception $e) {
+        // Catch and handle any exceptions, return with an error message
+        return redirect()->back()->with('error', $e->getMessage());
+    }
+}
+
+
+
+
+
 }
