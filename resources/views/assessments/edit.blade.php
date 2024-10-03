@@ -1,57 +1,81 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mt-5">
-    <div class="row mb-4">
-        <div class="col-12 text-center">
-            <h1 class="display-4 font-weight-bold">Edit Assessment</h1>
-        </div>
-    </div>
+<div class="container mx-auto p-5">
+    <h1 class="text-3xl font-bold mb-4">Edit Assessment</h1>
 
-    <!-- Show errors if validation fails -->
-    @if($errors->any())
-        <div class="alert alert-danger">
+    @if(session('success'))
+        <div class="alert alert-success">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger mt-4">
+            {{ session('error') }}
+        </div>
+    @endif
+
+    @if ($errors->any())
+        <div class="alert alert-danger mt-4">
             <ul>
-                @foreach($errors->all() as $error)
+                @foreach ($errors->all() as $error)
                     <li>{{ $error }}</li>
                 @endforeach
             </ul>
         </div>
     @endif
 
-    <!-- Edit Peer Review Assessment Form -->
-    <form method="POST" action="{{ route('teacher.update.assessment', $assessment->id) }}">
-        @csrf
-        <div class="form-row">
-            <div class="form-group col-md-6 mt-2">
-                <input type="text" name="title" placeholder="Assessment Title" value="{{ old('title', $assessment->title) }}" maxlength="20" required class="form-control">
-            </div>
-            <div class="form-group col-md-6 mt-2">
-                <input type="text" name="instruction" placeholder="Instructions" value="{{ old('instruction', $assessment->instruction) }}" required class="form-control">
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="form-group col-md-4 mt-2">
-                <input type="number" name="num_reviews" min="1" value="{{ old('num_reviews', $assessment->num_reviews) }}" placeholder="Number of Reviews" required class="form-control">
-            </div>
-            <div class="form-group col-md-4 mt-2">
-                <input type="number" name="max_score" min="1" max="100" value="{{ old('max_score', $assessment->max_score) }}" placeholder="Max Score" required class="form-control">
-            </div>
-            <div class="form-group col-md-4 mt-2">
-                <input type="datetime-local" name="due_date" value="{{ old('due_date', \Carbon\Carbon::parse($assessment->due_date)->format('Y-m-d\TH:i')) }}" required class="form-control">
-            </div>
-        </div>
-        <div class="form-row mt-2">
-            <div class="form-group col-md-6">
-                <select name="type" required class="form-control">
-                    <option value="student-select" {{ $assessment->type == 'student-select' ? 'selected' : '' }}>Student Select</option>
-                    <option value="teacher-assign" {{ $assessment->type == 'teacher-assign' ? 'selected' : '' }}>Teacher Assign</option>
-                </select>
-            </div>
-            <div class="form-group col-md-6 mt-2">
-                <button type="submit" class="btn btn-primary w-100">Update Assessment</button>
-            </div>
-        </div>
+    <form method="POST" action="{{ route('assessments.update', $assessment->id) }}">
+    @csrf
+    @method('PUT')
+
+    <!-- Readonly fields -->
+    <div class="form-group">
+        <label for="course_name">Course Name</label>
+        <input type="text" id="course_name" class="form-control" value="{{ $course->name }}" readonly>
+    </div>
+
+    <div class="form-group mt-2">
+        <label for="course_id">Course ID</label>
+        <input type="text" id="course_id" class="form-control" value="{{ $course->id }}" readonly>
+    </div>
+
+    <!-- Editable fields -->
+    <div class="form-group my-4">
+        <label for="title">Title</label>
+        <input type="text" name="title" class="form-control" value="{{ old('title', $assessment->title) }}" required>
+    </div>
+
+    <div class="form-group">
+        <label for="instruction">Instructions</label>
+        <textarea name="instruction" class="form-control" required>{{ old('instruction', $assessment->instruction) }}</textarea>
+    </div>
+
+    <div class="form-group my-4">
+        <label for="num_reviews">Number of Reviews</label>
+        <input type="number" name="num_reviews" class="form-control" value="{{ old('num_reviews', $assessment->num_reviews) }}" min="1" required>
+    </div>
+
+    <div class="form-group">
+        <label for="max_score">Max Score</label>
+        <input type="number" name="max_score" class="form-control" value="{{ old('max_score', $assessment->max_score) }}" min="1" max="100" required>
+    </div>
+
+    <div class="form-group my-4">
+        <label for="due_date">Due Date</label>
+        <input type="datetime-local" name="due_date" class="form-control" value="{{ \Carbon\Carbon::parse(old('due_date', $assessment->due_date))->format('Y-m-d\TH:i') }}" required>
+    </div>
+
+    <div class="form-group my-4">
+        <label for="type">Type</label>
+        <select name="type" class="form-control" required>
+            <option value="student-select" {{ old('type', $assessment->type) == 'student-select' ? 'selected' : '' }}>Student Select</option>
+            <option value="teacher-assign" {{ old('type', $assessment->type) == 'teacher-assign' ? 'selected' : '' }}>Teacher Assign</option>
+        </select>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Update Assessment</button>
     </form>
 </div>
 @endsection

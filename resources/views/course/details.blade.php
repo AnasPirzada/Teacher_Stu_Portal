@@ -9,6 +9,19 @@
         <h3 class="text-lg font-semibold">Teacher: <span class="text-primary">{{ $course->teacher->name }}</span></h3>
     </div>
 
+    @if(session('success'))
+    <div class="alert alert-success">
+        {{ session('success') }}
+    </div>
+@endif
+
+@if(session('error'))
+    <div class="alert alert-danger mt-4">
+        {{ session('error') }}
+    </div>
+@endif
+
+
     <div class="bg-light p-4 rounded-lg shadow-md mb-4">
         <h3 class="text-2xl font-semibold mb-3">Assessments:</h3>
         <ul class="list-unstyled ">
@@ -20,13 +33,11 @@
                     
                     
                     
-                    
-                    
                 </li>
                 <li>
                     <a href="{{ route('assessment.details', $assessment->id) }}" class="text-info">View Details</a>
                     @if($isTeacher)
-                    <a href="{{ route('assessment.edit.assessment', $assessment->id) }}" class="text-warning ps-6">Edit</a>
+                    <a href="{{ route('assessment.edit', $assessment->id) }}" class="text-warning ps-6">Edit</a>
                     @endif
                 </li>
             </div>
@@ -86,7 +97,7 @@
                 </div>
             </form>
 
-            <!-- Upload Course File Form -->
+            <!-- Upload Course File Form
             <h3 class="text-2xl font-semibold pt-5">Upload Course File:</h3>
             <form method="POST" action="{{ route('courses.upload') }}" enctype="multipart/form-data">
                 @csrf
@@ -94,7 +105,7 @@
                     <input type="file" name="course_file" accept=".txt" class="form-control" required>
                 </div>
                 <button type="submit" class="btn btn-primary w-100 mt-4">Upload Course</button>
-            </form>
+            </form> -->
         </div>
     @endif
 

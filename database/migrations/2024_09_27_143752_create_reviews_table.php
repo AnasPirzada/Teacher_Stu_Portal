@@ -17,7 +17,10 @@ return new class extends Migration
             $table->unsignedBigInteger('reviewer_id');  // Foreign key to Users (students)
             $table->unsignedBigInteger('reviewee_id');  // Foreign key to Users (students)
             $table->text('review_text');  // Free text for reviews (with validation handled in controllers)
+            $table->integer('rating')->unsigned()->nullable(false); // Ensure this line is present
             $table->integer('score')->unsigned()->nullable();  // Nullable, teacher will assign score later
+
+            // $table->integer('rating')->unsigned()->nullable();  // Remove `after('score')`
             $table->timestamps();
 
             // Foreign key constraints

@@ -13,6 +13,9 @@ use App\Http\Controllers\AssessmentController;
 // Auth routes
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
+Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
+Route::post('/register', [AuthController::class, 'register'])->name('register.submit');
+
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
@@ -42,12 +45,15 @@ Route::middleware('auth')->group(function () {
     Route::post('/assessments/submit_review', [AssessmentController::class, 'storeReview'])->name('assessment.submit_review'); // Submit peer review
 
     // Route for editing a peer review assessment
-Route::get('assessment/{id}/edit', [AssessmentController::class, 'edit'])->name('assessment.edit.assessment');
+Route::get('assessment/{id}/edit', [AssessmentController::class, 'edit'])->name('assessment.edit');
 
 // Route for updating a peer review assessment
-Route::post('assessment/{id}/update', [AssessmentController::class, 'update'])->name('assessment.update.assessment');
+Route::put('assessment/{id}/update', [AssessmentController::class, 'update'])->name('assessments.update');
+
     // Review routes
     Route::post('/review', [ReviewController::class, 'store'])->name('review.store');
+// In web.php
+Route::get('/assessments/top_reviewers', [ReviewController::class, 'topReviewers'])->name('assessments.top_reviewers');
 
     // Teacher-specific routes
     Route::get('/teacher/student_reviews/{assessment_id}/{student_id}', [TeacherController::class, 'studentReviews'])->name('teacher.student_reviews');

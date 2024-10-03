@@ -12,7 +12,7 @@
         <ul>
             @foreach($submittedReviews as $review)
                 <li>
-                    Reviewed: {{ $review->reviewee->name }} - {{ $review->review_text }}
+                    Reviewed: {{ $review->reviewee->name }} - {{ $review->review_text }} - Rating: {{ $review->rating }}
                 </li>
             @endforeach
         </ul>
@@ -26,7 +26,7 @@
         <ul>
             @foreach($receivedReviews as $review)
                 <li>
-                    Reviewer: {{ $review->reviewer->name }} - {{ $review->review_text }} {{ $review->score }}
+                    Reviewer: {{ $review->reviewer->name }} - {{ $review->review_text }} - Score: {{ $review->score }} - Rating: {{ $review->rating }}
                 </li>
             @endforeach
         </ul>

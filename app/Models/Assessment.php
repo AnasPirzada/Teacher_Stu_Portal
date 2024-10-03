@@ -37,4 +37,8 @@ class Assessment extends Model
     {
         return $this->hasMany(Review::class);
     }
+    public function hasSubmittedReviews()
+    {
+        return $this->reviews()->whereNotNull('review_text')->exists();
+    }
 }

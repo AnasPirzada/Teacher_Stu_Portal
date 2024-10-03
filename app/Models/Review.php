@@ -17,6 +17,9 @@ class Review extends Model
         'reviewer_id',
         'reviewee_id',
         'assessment_id',
+        'rating',
+        'score',
+        
     ];
 
     /**
@@ -42,6 +45,10 @@ class Review extends Model
     {
         return $this->belongsTo(User::class, 'reviewee_id');
     }
-    
+    public function teacher()
+{
+    return $this->reviewee();
+}
+
 
 }

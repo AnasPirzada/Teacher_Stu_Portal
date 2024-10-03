@@ -94,4 +94,14 @@ class TeacherController extends Controller
 
         return view('assessments.student_reviews', compact('assessment', 'student', 'submittedReviews', 'receivedReviews'));
     }
+
+    
+    public function showAssessment($id)
+    {
+        $assessment = Assessment::with('course')->findOrFail($id);
+        $students = Student::with(['submittedReviews', 'receivedReviews'])->paginate(10); // Adjust as needed
+
+        return view('teacher.teacher_view', compact('assessment', 'students'));
+    }
+
 }
