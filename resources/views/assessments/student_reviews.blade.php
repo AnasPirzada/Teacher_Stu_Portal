@@ -26,7 +26,7 @@
         <ul>
             @foreach($receivedReviews as $review)
                 <li>
-                    Reviewer: {{ $review->reviewer->name }} - {{ $review->review_text }} - Score: {{ $review->score }} - Rating: {{ $review->rating }}
+                    Reviewer: {{ $assessment->course->teacher->name }} - Score: {{ $review->score }}
                 </li>
             @endforeach
         </ul>

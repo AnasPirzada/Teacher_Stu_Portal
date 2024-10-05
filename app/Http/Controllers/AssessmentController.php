@@ -122,7 +122,7 @@ public function markStudent(Request $request, $id)
         // Update only the score, not the rating
         $existingReview->update([
             'score' => $request->score,
-            'review_text' => 'Score updated by teacher',
+            // 'review_text' => 'Score updated by teacher',
         ]);
     } else {
         // If no review exists, create one with the score only
