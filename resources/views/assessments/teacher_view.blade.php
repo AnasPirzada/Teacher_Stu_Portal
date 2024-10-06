@@ -82,18 +82,20 @@
             <td>{{ $student->s_number }}</td>
             <td>{{ $student->submittedReviews }}</td> <!-- This should work if the relationship is defined correctly -->
             <td>{{ $student->receivedReviews }}</td> <!-- This should work if the relationship is defined correctly -->
-            <td>
-                <form method="POST" action="{{ route('assessment.mark_student', ['id' => $assessment->id]) }}">
-                    @csrf
-                    <div class="input-group">
-                        <input type="hidden" name="student_id" value="{{ $student->id }}">
-                        <input type="number" name="score" value="{{ $student->score ?? '' }}" min="0" max="{{ $assessment->max_score }}" class="form-control" required>
-                        <div class="input-group-append">
-                            <button type="submit" class="btn btn-success ms-4">Save</button>
-                        </div>
-                    </div>
-                </form>
-            </td>
+            {{-- Score Assignment --}}
+<td>
+    <form method="POST" action="{{ route('assessment.mark_student', ['id' => $assessment->id]) }}">
+        @csrf
+        <div class="input-group">
+            <input type="hidden" name="student_id" value="{{ $student->id }}">
+            <input type="number" name="score" value="{{ $student->score ?? '' }}" min="0" max="{{ $assessment->max_score }}" class="form-control" required>
+            <div class="input-group-append">
+                <button type="submit" class="btn btn-success ms-4">Save</button>
+            </div>
+        </div>
+    </form>
+</td>
+
             <td>
                 <a href="{{ route('teacher.student_reviews', ['assessment_id' => $assessment->id, 'student_id' => $student->id]) }}" class="btn btn-info btn-block">View Reviews</a>
             </td>

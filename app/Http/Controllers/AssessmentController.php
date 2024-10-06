@@ -16,35 +16,27 @@ class AssessmentController extends Controller
         $course = $assessment->course;
         $user = auth()->user();
         $isTeacher = $user->role === 'teacher';
-        $students = $course->students;  // Pass all students to the view
+        $students = $course->students;
 
         if ($isTeacher) {
-            // Logic for the teacher
+            // Logic for the teacher to view students' review status and add scores
             $students = $course->students()->paginate(10);
-        
-            // Call the method to assign students to groups
-            $groups = $this->assignStudentsToGroups($assessment);
-            
-            // Attach the group info to students
+
             foreach ($students as $student) {
-                // Assuming you have a method to check group assignments
-                $student->group_assigned = $this->getAssignedGroup($student, $groups); // Create this method
                 $student->submittedReviews = $assessment->reviews()->where('reviewer_id', $student->id)->count();
                 $student->receivedReviews = $assessment->reviews()->where('reviewee_id', $student->id)->count();
                 $student->score = $assessment->reviews()->where('reviewee_id', $student->id)->avg('score');
             }
-    
-            return view('assessments.teacher_view', compact('assessment', 'course', 'students', 'isTeacher', 'groups'));
+
+            return view('assessments.teacher_view', compact('assessment', 'course', 'students', 'isTeacher'));
         } else {
             // Logic for the student
             $submittedReviews = $assessment->reviews()->where('reviewer_id', $user->id)->get();
             $receivedReviews = $assessment->reviews()->where('reviewee_id', $user->id)->get();
-            $students = $course->students;
-    
+
             return view('assessments.student_view', compact('assessment', 'course', 'submittedReviews', 'receivedReviews', 'isTeacher', 'students'));
         }
     }
-    
     
 
     public function store(Request $request, $courseId)
@@ -72,39 +64,38 @@ class AssessmentController extends Controller
     }
 
     public function storeReview(Request $request)
-{
-    $request->validate([
-        'assessment_id' => 'required|exists:assessments,id',
-        // 'review_text' => 'required|string|min:5',
-        'rating' => 'required|integer|min:1|max:5',  // Rating validation
-    ]);
-
-    $existingReview = Review::where('assessment_id', $request->assessment_id)
-        ->where('reviewer_id', auth()->id()) // The student who is reviewing
-        ->where('reviewee_id', $request->reviewee_id) // The reviewee is another student or self
-        ->first();
-
-    if ($existingReview) {
-        // If a review exists, update only rating and review text, not score
-        $existingReview->update([
-            'review_text' => $request->review_text,
-            'rating' => $request->rating, // Update rating
+    {
+        $request->validate([
+            'assessment_id' => 'required|exists:assessments,id',
+            'review_text' => 'required|string|min:5',
+            'rating' => 'required|integer|min:1|max:5',
+            'reviewee_id' => 'required|exists:users,id',
         ]);
-    } else {
-        // Create a new review
-        Review::create([
-            'assessment_id' => $request->assessment_id,
-            'reviewer_id' => auth()->id(),  // Reviewer is the logged-in student
-            'reviewee_id' => $request->reviewee_id,  // Reviewee is the selected student
-            'review_text' => $request->review_text,
-            'rating' => $request->rating, // Store the rating
-            'score' => null,  // Do not set a score
-        ]);
+
+        $existingReview = Review::where('assessment_id', $request->assessment_id)
+            ->where('reviewer_id', auth()->id())
+            ->where('reviewee_id', $request->reviewee_id)
+            ->first();
+
+        if ($existingReview) {
+            // If a review exists, update it
+            $existingReview->update([
+                'review_text' => $request->review_text,
+                'rating' => $request->rating,
+            ]);
+        } else {
+            // Create a new review
+            Review::create([
+                'assessment_id' => $request->assessment_id,
+                'reviewer_id' => auth()->id(),
+                'reviewee_id' => $request->reviewee_id,
+                'review_text' => $request->review_text,
+                'rating' => $request->rating,
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Review submitted successfully');
     }
-
-    return redirect()->back()->with('success', 'Review submitted successfully');
-}
-
     
 
 public function markStudent(Request $request, $id)

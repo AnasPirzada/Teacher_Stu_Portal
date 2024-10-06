@@ -69,17 +69,22 @@ class TeacherController extends Controller
             'score' => 'required|integer|min:0|max:100',
         ]);
 
-        // Find the review for the specific student and assessment
-        $review = Review::where('assessment_id', $id)
-            ->where('reviewee_id', $request->student_id)
-            ->first();
+        $review = Review::firstOrCreate(
+            [
+                'assessment_id' => $id,
+                'reviewee_id' => $request->student_id,
+            ],
+            [
+                'reviewer_id' => auth()->id(),
+                'rating' => null,
+            ]
+        );
 
-        if ($review) {
-            $review->score = $request->score;
-            $review->save();
-        }
+        // Update only the score, not the text
+        $review->score = $request->score;
+        $review->save();
 
-        return redirect()->route('assessment.teacher_view', $id)->with('success', 'Score updated successfully!');
+        return redirect()->back()->with('success', 'Score updated successfully!');
     }
 
     // View all reviews submitted and received by a student for an assessment
