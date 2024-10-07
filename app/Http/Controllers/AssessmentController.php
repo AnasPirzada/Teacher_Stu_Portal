@@ -7,36 +7,56 @@ use App\Models\Assessment;
 use App\Models\Course;
 use App\Models\Review;
 use App\Models\User;
+use App\Models\Group; // <-- Add this line to import the Group model
 
 class AssessmentController extends Controller
 {
     public function details($id)
-    {
-        $assessment = Assessment::findOrFail($id);
-        $course = $assessment->course;
-        $user = auth()->user();
-        $isTeacher = $user->role === 'teacher';
+{
+    $assessment = Assessment::findOrFail($id);
+    $course = $assessment->course;
+    $user = auth()->user();
+    $isTeacher = $user->role === 'teacher';
+
+    if ($isTeacher) {
+        // Logic for the teacher view
+        $students = $course->students()->with(['groups' => function ($query) use ($assessment) {
+            $query->where('assessment_id', $assessment->id);
+        }])->paginate(10);
+
+        foreach ($students as $student) {
+            $student->group = $student->groupForAssessment($assessment->id);
+            $student->submittedReviewsCount = $assessment->reviews()->where('reviewer_id', $student->id)->count();
+            $student->receivedReviewsCount = $assessment->reviews()->where('reviewee_id', $student->id)->count();
+            $student->score = $assessment->reviews()->where('reviewee_id', $student->id)->first()->score ?? null;
+        }
+
+        $groups = Group::where('assessment_id', $assessment->id)->with('students')->get();
+
+        return view('assessments.teacher_view', compact('assessment', 'course', 'students', 'groups'));
+    } else {
+        // Logic for the student view
+        $submittedReviews = $assessment->reviews()->where('reviewer_id', $user->id)->get();
+        $receivedReviews = $assessment->reviews()->where('reviewee_id', $user->id)->get();
+
+        // Find the group the student belongs to for this assessment, if groups are created
+        $userGroup = Group::whereHas('students', function ($query) use ($user) {
+            $query->where('student_id', $user->id);
+        })->where('assessment_id', $assessment->id)->with('students')->first();
+ // Get the exact score assigned by the teacher
+ $review = $assessment->reviews()->where('reviewee_id', $user->id)->first();
+ $score = $review ? $review->score : null;
+        // Get all students in the course in case groups haven't been created
         $students = $course->students;
 
-        if ($isTeacher) {
-            // Logic for the teacher to view students' review status and add scores
-            $students = $course->students()->paginate(10);
-
-            foreach ($students as $student) {
-                $student->submittedReviews = $assessment->reviews()->where('reviewer_id', $student->id)->count();
-                $student->receivedReviews = $assessment->reviews()->where('reviewee_id', $student->id)->count();
-                $student->score = $assessment->reviews()->where('reviewee_id', $student->id)->avg('score');
-            }
-
-            return view('assessments.teacher_view', compact('assessment', 'course', 'students', 'isTeacher'));
-        } else {
-            // Logic for the student
-            $submittedReviews = $assessment->reviews()->where('reviewer_id', $user->id)->get();
-            $receivedReviews = $assessment->reviews()->where('reviewee_id', $user->id)->get();
-
-            return view('assessments.student_view', compact('assessment', 'course', 'submittedReviews', 'receivedReviews', 'isTeacher', 'students'));
-        }
+        return view('assessments.student_view', compact('assessment', 'course', 'submittedReviews', 'receivedReviews', 'userGroup', 'students','score'));
     }
+}
+
+
+
+    
+    
     
 
     public function store(Request $request, $courseId)
@@ -244,7 +264,65 @@ public function markStudent(Request $request, $id)
             return view('assessments.teacher_view', compact('assessment', 'receivedReviews', 'teacherDetails'));
         }
         
+        public function createGroups($assessmentId)
+        {
+            try {
+                $assessment = Assessment::findOrFail($assessmentId);
+                $students = $assessment->course->students()->get();
         
+                // Check if there are enough students to form groups
+                if ($students->isEmpty()) {
+                    return redirect()->route('assessments.teacher_view', ['assessmentId' => $assessmentId])
+                        ->with('error', 'No students are enrolled in this course to create groups.');
+                }
+        
+                // Shuffle students for randomness
+                $students = $students->shuffle();
+        
+                // Delete previous groups for this assessment if any exist
+                Group::where('assessment_id', $assessment->id)->delete();
+        
+                // Assign students to groups with a minimum of 3 and a maximum of 5 students per group
+                $totalStudents = count($students);
+                $groupIndex = 0;
+                $groupSize = 5;
+        
+                while ($students->isNotEmpty()) {
+                    $groupName = chr(65 + $groupIndex); // Assign group names A, B, C, etc.
+                    $groupSize = min($groupSize, $students->count()); // Adjust group size to not exceed remaining students
+        
+                    if ($groupSize < 3 && $students->count() > 3) {
+                        $groupSize = 3;
+                    }
+        
+                    $group = Group::create([
+                        'name' => $groupName,
+                        'assessment_id' => $assessment->id,
+                    ]);
+        
+                    $groupStudents = $students->splice(0, $groupSize); // Get the next set of students
+                    $group->students()->attach($groupStudents->pluck('id'));
+        
+                    $groupIndex++;
+                }
+        
+                return redirect()->route('assessments.teacher_view', ['assessmentId' => $assessmentId])
+                    ->with('success', 'Groups created successfully.');
+        
+            } catch (\Exception $e) {
+                // Log the error for debugging
+                \Log::error('Error creating groups: ' . $e->getMessage());
+        
+                return redirect()->route('assessments.teacher_view', ['assessmentId' => $assessmentId])
+                    ->with('error', 'An error occurred while creating groups: ' . $e->getMessage());
+            }
+        }
+        
+
+
+
+        
+
 
 
 }

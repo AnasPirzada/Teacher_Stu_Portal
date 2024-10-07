@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Group;
 
 class User extends Authenticatable
 {
@@ -53,13 +53,36 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Course::class, 'enrollments', 'student_id', 'course_id');
     }
+
+    /**
+     * Reviews submitted by this user (student).
+     */
     public function submittedReviews()
     {
-        return $this->hasMany(Review::class, 'reviewer_id'); // Assuming reviewer_id references the Student
+        return $this->hasMany(Review::class, 'reviewer_id');
     }
 
+    /**
+     * Reviews received by this user (student).
+     */
     public function receivedReviews()
     {
-        return $this->hasMany(Review::class, 'reviewee_id'); // Assuming reviewee_id references the Student
+        return $this->hasMany(Review::class, 'reviewee_id');
+    }
+
+    /**
+     * The groups the student belongs to.
+     */
+    public function groups()
+    {
+        return $this->belongsToMany(Group::class, 'group_student', 'student_id', 'group_id');
+    }
+
+    /**
+     * Helper method to get the group of the student for a specific assessment.
+     */
+    public function groupForAssessment($assessmentId)
+    {
+        return $this->groups()->where('assessment_id', $assessmentId)->first();
     }
 }

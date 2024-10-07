@@ -49,6 +49,13 @@ Route::get('assessment/{id}/edit', [AssessmentController::class, 'edit'])->name(
 
 // Route for updating a peer review assessment
 Route::put('assessment/{id}/update', [AssessmentController::class, 'update'])->name('assessments.update');
+Route::get('/assessments/{assessmentId}/create-groups', [AssessmentController::class, 'createGroups'])->name('assessment.create_groups');
+
+// Route for the teacher's view of the assessment
+Route::get('/assessments/{assessmentId}/teacher-view', [AssessmentController::class, 'details'])
+    ->name('assessments.teacher_view');
+
+
 
     // Review routes
     Route::post('/review', [ReviewController::class, 'store'])->name('review.store');

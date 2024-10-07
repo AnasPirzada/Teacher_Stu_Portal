@@ -8,10 +8,18 @@
             <h4 class="text-center">Posted by: {{ $assessment->course->teacher->name }}</h4> {{-- Display teacher's name --}}
         </div>
         <div class="col-12 text-center mb-4">
-            <p><strong>Instruction:</strong> {{ $assessment->instruction }}</p>
-            <p><strong>Due Date:</strong> {{ \Carbon\Carbon::parse($assessment->due_date)->format('M d, Y') }}</p>
-            <p><strong>Max Score:</strong> {{ $assessment->max_score }}</p>
-        </div>
+    <p><strong>Instruction:</strong> {{ $assessment->instruction }}</p>
+    <p><strong>Due Date:</strong> {{ \Carbon\Carbon::parse($assessment->due_date)->format('M d, Y') }}</p>
+    <p><strong>Max Score:</strong> {{ $assessment->max_score }}</p>
+    <p><strong>Your Score:</strong> 
+        @if($score !== null)
+            {{ $score }}/{{ $assessment->max_score }}
+        @else
+            Score not added yet
+        @endif
+    </p>
+</div>
+
 
 
         {{-- Submitted Reviews Section --}}
@@ -59,17 +67,38 @@
         @csrf
         <input type="hidden" name="assessment_id" value="{{ $assessment->id }}">
 
-        <div class="form-group">
+        <!-- <div class="form-group">
             <label for="reviewee_id">Select Reviewee:</label>
             <select name="reviewee_id" id="reviewee_id" class="form-control" required>
                 <option value="" disabled selected>Select a student</option>
                 @foreach ($students as $student)
-                    @if ($student->id !== auth()->id()) <!-- Prevent reviewing self -->
+                    @if ($student->id !== auth()->id()) <!-- Prevent reviewing self 
                         <option value="{{ $student->id }}">{{ $student->name }}</option>
                     @endif
                 @endforeach
             </select>
-        </div>
+        </div> -->
+        <div class="form-group">
+    <label for="reviewee_id">Select Reviewee:</label>
+    <select name="reviewee_id" id="reviewee_id" class="form-control" required>
+        <option value="" disabled selected>Select a student</option>
+        @if ($userGroup) <!-- If groups have been assigned -->
+            @foreach ($userGroup->students as $student)
+                @if ($student->id !== auth()->id()) <!-- Exclude self -->
+                    <option value="{{ $student->id }}">{{ $student->name }} (Group {{ $userGroup->name }})</option>
+                @endif
+            @endforeach
+        @else <!-- If groups have not been assigned -->
+            @foreach ($students as $student)
+                @if ($student->id !== auth()->id()) <!-- Exclude self -->
+                    <option value="{{ $student->id }}">{{ $student->name }}</option>
+                @endif
+            @endforeach
+        @endif
+    </select>
+</div>
+
+
 
         <div class="form-group">
             <label for="review_text">Your Review:</label>
